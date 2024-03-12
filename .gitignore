@@ -1,3 +1,9 @@
+#Dirs
+/Debug
+/Space
+/x64
+/Release
+/.vs
 # Prerequisites
 *.d
 
