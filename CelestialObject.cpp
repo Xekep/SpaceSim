@@ -12,6 +12,10 @@ sf::Vector2f CelestialObject::GetPosition() const
 {
 	return _Shape.getPosition();
 }
+void CelestialObject::Move(const sf::Vector2f& Offset)
+{
+	SetPosition(GetPosition() + Offset);
+}
 void CelestialObject::Draw(sf::RenderWindow& window) const {
 	window.draw(_Shape);
 }

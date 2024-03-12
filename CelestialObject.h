@@ -32,6 +32,7 @@ public:
 	void Draw(sf::RenderWindow& window) const;
 	void SetPosition(const sf::Vector2f& Coords);
 	sf::Vector2f GetPosition() const;
+	void Move(const sf::Vector2f& Offset);
 
 protected:
 	void RecalculateRadius();

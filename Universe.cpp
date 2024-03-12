@@ -23,21 +23,69 @@ void Universe::CalculatePhysics()
 void Universe::HandleEvents()
 {
     sf::Event event;
+
     while (_Window->pollEvent(event))
     {
-        if (event.type == sf::Event::Closed)
-            _Window->close();
-        else if (event.type == sf::Event::MouseButtonPressed &&
-            event.mouseButton.button == sf::Mouse::Left) {
-            auto mousePosition = sf::Mouse::getPosition(*_Window);
-            auto type = _rnd.Generate<int>(0, 99) <= 90 ? CelestialObject::Type::Planet : CelestialObject::Type::Star;
-            AddCelestialObject(sf::Vector2f(mousePosition), type);
+        switch (event.type)
+        {
+        case sf::Event::Closed:
+            WindowCloseEvent(event);
+            break;
+        case sf::Event::MouseButtonPressed:
+            MouseButtonPressedEvent(event);
+            break;
+        case sf::Event::MouseButtonReleased:
+            MouseButtonReleasedEvent(event);
+            break;
+        case sf::Event::Resized:
+            WindowResizedEvent(event);
+            break;
+        default:
+            break;
         }
-        else if (event.type == sf::Event::Resized) {
-            sf::FloatRect visibleArea(0.f, 0.f, event.size.width, event.size.height);
-            _Window->setView(sf::View(visibleArea));
-        }
+
+        if (IsDragging)
+            MoveObjectsWithMouse();
     }
+}
+
+inline void Universe::WindowCloseEvent(const sf::Event& event)
+{
+    _Window->close();
+}
+
+inline void Universe::MouseButtonPressedEvent(const sf::Event& event)
+{
+    auto mousePosition = sf::Mouse::getPosition(*_Window);
+    if (event.mouseButton.button == sf::Mouse::Left)
+    {
+        auto type = _rnd.Generate<int>(0, 99) <= 90 ? CelestialObject::Type::Planet : CelestialObject::Type::Star;
+        AddCelestialObject(sf::Vector2f(mousePosition), type);
+    }
+    if (event.mouseButton.button == sf::Mouse::Right)
+    {
+        IsDragging = true;
+        LastMousePosition = mousePosition;
+    }
+}
+
+inline void Universe::MouseButtonReleasedEvent(const sf::Event& event)
+{
+    if (event.mouseButton.button == sf::Mouse::Right)
+        IsDragging = false;
+}
+
+inline void Universe::WindowResizedEvent(const sf::Event& event)
+{
+    sf::FloatRect visibleArea(0.f, 0.f, event.size.width, event.size.height);
+    _Window->setView(sf::View(visibleArea));
+}
+
+inline void Universe::MoveObjectsWithMouse()
+{
+    auto offset = sf::Vector2f(LastMousePosition - sf::Mouse::getPosition(*_Window));
+    for (auto& object : _Objects)
+        object->Move(offset);
 }
 
 void Universe::DrawUniverse()
