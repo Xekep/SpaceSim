@@ -29,16 +29,16 @@ void Universe::HandleEvents()
         switch (event.type)
         {
         case sf::Event::Closed:
-            WindowCloseEvent(event);
+            HandleWindowCloseEvent(event);
             break;
         case sf::Event::MouseButtonPressed:
-            MouseButtonPressedEvent(event);
+            HandleMouseButtonPressedEvent(event);
             break;
         case sf::Event::MouseButtonReleased:
-            MouseButtonReleasedEvent(event);
+            HandleMouseButtonReleasedEvent(event);
             break;
         case sf::Event::Resized:
-            WindowResizedEvent(event);
+            HandleWindowResizedEvent(event);
             break;
         default:
             break;
@@ -49,12 +49,12 @@ void Universe::HandleEvents()
     }
 }
 
-inline void Universe::WindowCloseEvent(const sf::Event& event)
+inline void Universe::HandleWindowCloseEvent(const sf::Event& event)
 {
     _Window->close();
 }
 
-inline void Universe::MouseButtonPressedEvent(const sf::Event& event)
+inline void Universe::HandleMouseButtonPressedEvent(const sf::Event& event)
 {
     auto mousePosition = sf::Mouse::getPosition(*_Window);
     if (event.mouseButton.button == sf::Mouse::Left)
@@ -69,13 +69,13 @@ inline void Universe::MouseButtonPressedEvent(const sf::Event& event)
     }
 }
 
-inline void Universe::MouseButtonReleasedEvent(const sf::Event& event)
+inline void Universe::HandleMouseButtonReleasedEvent(const sf::Event& event)
 {
     if (event.mouseButton.button == sf::Mouse::Right)
         IsDragging = false;
 }
 
-inline void Universe::WindowResizedEvent(const sf::Event& event)
+inline void Universe::HandleWindowResizedEvent(const sf::Event& event)
 {
     sf::FloatRect visibleArea(0.f, 0.f, event.size.width, event.size.height);
     _Window->setView(sf::View(visibleArea));

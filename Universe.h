@@ -19,10 +19,10 @@ private:
 	void CalculatePhysics();
 	void DrawUniverse();
 	void AddCelestialObject(const sf::Vector2f, CelestialObject::Type Type);
-    inline void WindowCloseEvent(const sf::Event& event);
-    inline void MouseButtonPressedEvent(const sf::Event& event);
-    inline void MouseButtonReleasedEvent(const sf::Event& event);
-	inline void WindowResizedEvent(const sf::Event& event);
+	inline void HandleWindowCloseEvent(const sf::Event& event);
+	inline void HandleMouseButtonPressedEvent(const sf::Event& event);
+	inline void HandleMouseButtonReleasedEvent(const sf::Event& event);
+	inline void HandleWindowResizedEvent(const sf::Event& event);
 	inline void MoveObjectsWithMouse();
 
 	PhysicEngine _Engine;
