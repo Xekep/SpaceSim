@@ -16,7 +16,7 @@ public:
 		Planet,
 		Star
 	};
-	const double SOLAR_MASS = 1.98847e+30;
+	const float SOLAR_MASS = (float)1.98847e+30;
 	const float SOLAR_DENSITY = 1.41 * 1000;
 
 	CelestialObject(const sf::Vector2f& Coords);
@@ -33,13 +33,15 @@ public:
 	void SetPosition(const sf::Vector2f& Coords);
 	sf::Vector2f GetPosition() const;
 	void Move(const sf::Vector2f& Offset);
+	void MoveWithAcceleration(const sf::Vector2f& Acceleration);
+
 
 protected:
 	void RecalculateRadius();
 
 	std::string _Name;
-	float _SolarMass; // солнечная масса M⊙
-	float _Density; // плотность кг/м^3
+	float _SolarMass = 0.f; // солнечная масса M⊙
+	float _Density = 0.f;	// плотность кг/м^3
 	sf::Vector2f _Velocity;
 	sf::CircleShape _Shape;
 };

@@ -16,6 +16,11 @@ void CelestialObject::Move(const sf::Vector2f& Offset)
 {
 	SetPosition(GetPosition() + Offset);
 }
+void CelestialObject::MoveWithAcceleration(const sf::Vector2f& Acceleration)
+{
+	_Velocity += Acceleration;
+	_Shape.setPosition(_Shape.getPosition() + _Velocity);
+}
 void CelestialObject::Draw(sf::RenderWindow& window) const {
 	window.draw(_Shape);
 }
@@ -55,7 +60,7 @@ void CelestialObject::RecalculateRadius()
 	// формула объема шара: объем = (4/3)*п*r ^ 3
 	// выводим формулу радиуса шара: радиус = ((масса/плотность)/(4/3*п))^(1/3)
 	// средн€€ плотность звезды пропорциональна€ массе и обратно пропорциональна радиусу
-	float radius = std::cbrt((_SolarMass * SOLAR_MASS / _Density) / (4.0 / 3.0 * M_PI)) / 100000 / 50;
+	float radius = std::cbrtf((_SolarMass * SOLAR_MASS / _Density) / (4.f / 3.f * (float)M_PI)) / 100000 / 50;
 	_Shape.setRadius(radius);
 	_Shape.setOrigin(radius, radius);
 }

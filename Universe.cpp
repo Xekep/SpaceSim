@@ -26,23 +26,14 @@ void Universe::HandleEvents()
 
     while (_Window->pollEvent(event))
     {
-        switch (event.type)
-        {
-        case sf::Event::Closed:
+        if(event.type == sf::Event::Closed)
             HandleWindowCloseEvent(event);
-            break;
-        case sf::Event::MouseButtonPressed:
+        if (event.type == sf::Event::MouseButtonPressed)
             HandleMouseButtonPressedEvent(event);
-            break;
-        case sf::Event::MouseButtonReleased:
+        if (event.type == sf::Event::MouseButtonReleased)
             HandleMouseButtonReleasedEvent(event);
-            break;
-        case sf::Event::Resized:
+        if (event.type == sf::Event::Resized)
             HandleWindowResizedEvent(event);
-            break;
-        default:
-            break;
-        }
 
         if (IsDragging)
             MoveObjectsWithMouse();
@@ -77,7 +68,7 @@ inline void Universe::HandleMouseButtonReleasedEvent(const sf::Event& event)
 
 inline void Universe::HandleWindowResizedEvent(const sf::Event& event)
 {
-    sf::FloatRect visibleArea(0.f, 0.f, event.size.width, event.size.height);
+    sf::FloatRect visibleArea(0.f, 0.f, (float)event.size.width, (float)event.size.height);
     _Window->setView(sf::View(visibleArea));
 }
 
