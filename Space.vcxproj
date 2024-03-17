@@ -147,8 +147,15 @@
     <ClInclude Include="PhysicEngine.h" />
     <ClInclude Include="Planet.h" />
     <ClInclude Include="Randomizer.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="Star.h" />
     <ClInclude Include="Universe.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Space.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="icon.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,8 +1,22 @@
 #include "Universe.h"
 Universe::Universe(unsigned int X, unsigned int Y, std::string Title)
+    : _Window(std::make_unique<sf::RenderWindow>(sf::VideoMode(X, Y), Title))
 {
-    _Window = std::make_unique<sf::RenderWindow>(sf::VideoMode(X, Y), Title);
     _Window->setFramerateLimit(60);
+    InitializeEventHandlers();
+}
+
+void Universe::InitializeEventHandlers()
+{
+    using namespace std::placeholders;
+
+    EventHandlers.insert({
+        {sf::Event::Closed, std::bind(&Universe::HandleWindowCloseEvent, this, _1)},
+        {sf::Event::MouseButtonPressed, std::bind(&Universe::HandleMouseButtonPressedEvent, this, _1)},
+        {sf::Event::MouseButtonReleased, std::bind(&Universe::HandleMouseButtonReleasedEvent, this, _1)},
+        {sf::Event::Resized, std::bind(&Universe::HandleWindowResizedEvent, this, _1)},
+        {sf::Event::KeyPressed, std::bind(&Universe::HandleKeyPressedEvent, this, _1)}
+    });
 }
 
 void Universe::Run()
@@ -10,6 +24,7 @@ void Universe::Run()
     while (_Window->isOpen())
     {
         HandleEvents();
+        ProcessCameraAndMouse();
         CalculatePhysics();
         DrawUniverse();
     }
@@ -26,57 +41,70 @@ void Universe::HandleEvents()
 
     while (_Window->pollEvent(event))
     {
-        if(event.type == sf::Event::Closed)
-            HandleWindowCloseEvent(event);
-        if (event.type == sf::Event::MouseButtonPressed)
-            HandleMouseButtonPressedEvent(event);
-        if (event.type == sf::Event::MouseButtonReleased)
-            HandleMouseButtonReleasedEvent(event);
-        if (event.type == sf::Event::Resized)
-            HandleWindowResizedEvent(event);
-
-        if (IsDragging)
-            MoveObjectsWithMouse();
+        if (EventHandlers.find(event.type) != EventHandlers.end())
+            EventHandlers[event.type](event);
     }
 }
 
-inline void Universe::HandleWindowCloseEvent(const sf::Event& event)
+void Universe::ProcessCameraAndMouse()
+{
+    if (IsDragging)
+        MoveCamera();
+
+    LastMousePosition = sf::Mouse::getPosition(*_Window);
+}
+
+inline void Universe::HandleWindowCloseEvent(const sf::Event& Event)
 {
     _Window->close();
 }
 
-inline void Universe::HandleMouseButtonPressedEvent(const sf::Event& event)
+inline void Universe::HandleMouseButtonPressedEvent(const sf::Event& Event)
 {
     auto mousePosition = sf::Mouse::getPosition(*_Window);
-    if (event.mouseButton.button == sf::Mouse::Left)
+    if (Event.mouseButton.button == sf::Mouse::Left)
     {
         auto type = _rnd.Generate<int>(0, 99) <= 90 ? CelestialObject::Type::Planet : CelestialObject::Type::Star;
-        AddCelestialObject(sf::Vector2f(mousePosition), type);
+        AddCelestialObject(mousePosition, type);
     }
-    if (event.mouseButton.button == sf::Mouse::Right)
+    else if (Event.mouseButton.button == sf::Mouse::Right)
     {
         IsDragging = true;
-        LastMousePosition = mousePosition;
     }
+
 }
 
-inline void Universe::HandleMouseButtonReleasedEvent(const sf::Event& event)
+inline void Universe::HandleKeyPressedEvent(const sf::Event& Event)
 {
-    if (event.mouseButton.button == sf::Mouse::Right)
+    if (Event.key.code == sf::Keyboard::Escape)
+        _Window->close();
+}
+
+inline void Universe::HandleMouseButtonReleasedEvent(const sf::Event& Event)
+{
+    if (Event.mouseButton.button == sf::Mouse::Right)
         IsDragging = false;
 }
 
-inline void Universe::HandleWindowResizedEvent(const sf::Event& event)
+inline void Universe::HandleWindowResizedEvent(const sf::Event& Event)
 {
-    sf::FloatRect visibleArea(0.f, 0.f, (float)event.size.width, (float)event.size.height);
-    _Window->setView(sf::View(visibleArea));
+    auto resolution = sf::Vector2i(Event.size.width, Event.size.height);
+    auto center = _Window->mapPixelToCoords(resolution / 2);
+    sf::FloatRect visibleArea(sf::Vector2f(0.f, 0.f), sf::Vector2f(resolution));
+    sf::View view(visibleArea);
+    view.setCenter(center);
+    _Window->setView(view);
 }
 
-inline void Universe::MoveObjectsWithMouse()
+inline void Universe::MoveCamera()
 {
-    auto offset = sf::Vector2f(LastMousePosition - sf::Mouse::getPosition(*_Window));
-    for (auto& object : _Objects)
-        object->Move(offset);
+    sf::View view = _Window->getView();
+    auto mousePosition = sf::Mouse::getPosition(*_Window);
+    // Вычисляем насколько сместился курсор и задаем нвоый центр
+    sf::Vector2f center = view.getCenter() + sf::Vector2f(LastMousePosition - mousePosition);
+    view.setCenter(center);
+    _Window->setView(view);
+    
 }
 
 void Universe::DrawUniverse()
@@ -87,10 +115,11 @@ void Universe::DrawUniverse()
     _Window->display();
 }
 
-void Universe::AddCelestialObject(const sf::Vector2f Coords, CelestialObject::Type Type)
+void Universe::AddCelestialObject(const sf::Vector2i CursorCoords, CelestialObject::Type Type)
 {
+    auto objCoords = _Window->mapPixelToCoords(CursorCoords);
     if (Type == CelestialObject::Type::Planet)
-        _Objects.push_back(std::make_unique<Planet>(Coords));
+        _Objects.push_back(std::make_unique<Planet>(objCoords));
     else
-        _Objects.push_back(std::make_unique<Star>(Coords));
+        _Objects.push_back(std::make_unique<Star>(objCoords));
 }
