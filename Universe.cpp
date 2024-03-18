@@ -11,11 +11,12 @@ void Universe::InitializeEventHandlers()
     using namespace std::placeholders;
 
     EventHandlers.insert({
-        {sf::Event::Closed, std::bind(&Universe::HandleWindowCloseEvent, this, _1)},
-        {sf::Event::MouseButtonPressed, std::bind(&Universe::HandleMouseButtonPressedEvent, this, _1)},
-        {sf::Event::MouseButtonReleased, std::bind(&Universe::HandleMouseButtonReleasedEvent, this, _1)},
-        {sf::Event::Resized, std::bind(&Universe::HandleWindowResizedEvent, this, _1)},
-        {sf::Event::KeyPressed, std::bind(&Universe::HandleKeyPressedEvent, this, _1)}
+        { sf::Event::Closed, std::bind(&Universe::HandleWindowCloseEvent, this, _1) },
+        { sf::Event::MouseButtonPressed, std::bind(&Universe::HandleMouseButtonPressedEvent, this, _1) },
+        { sf::Event::MouseButtonReleased, std::bind(&Universe::HandleMouseButtonReleasedEvent, this, _1) },
+        { sf::Event::Resized, std::bind(&Universe::HandleWindowResizedEvent, this, _1) },
+        { sf::Event::KeyPressed, std::bind(&Universe::HandleKeyPressedEvent, this, _1) },
+        { sf::Event::MouseWheelMoved, std::bind(&Universe::HandleMouseWheelMovedEvent, this, _1)}
     });
 }
 
@@ -54,12 +55,12 @@ void Universe::ProcessCameraAndMouse()
     LastMousePosition = sf::Mouse::getPosition(*_Window);
 }
 
-inline void Universe::HandleWindowCloseEvent(const sf::Event& Event)
+void Universe::HandleWindowCloseEvent(const sf::Event& Event)
 {
     _Window->close();
 }
 
-inline void Universe::HandleMouseButtonPressedEvent(const sf::Event& Event)
+void Universe::HandleMouseButtonPressedEvent(const sf::Event& Event)
 {
     auto mousePosition = sf::Mouse::getPosition(*_Window);
     if (Event.mouseButton.button == sf::Mouse::Left)
@@ -71,22 +72,26 @@ inline void Universe::HandleMouseButtonPressedEvent(const sf::Event& Event)
     {
         IsDragging = true;
     }
+    else if (Event.mouseButton.button == sf::Mouse::Middle)
+    {
+
+    }
 
 }
 
-inline void Universe::HandleKeyPressedEvent(const sf::Event& Event)
+void Universe::HandleKeyPressedEvent(const sf::Event& Event)
 {
     if (Event.key.code == sf::Keyboard::Escape)
         _Window->close();
 }
 
-inline void Universe::HandleMouseButtonReleasedEvent(const sf::Event& Event)
+void Universe::HandleMouseButtonReleasedEvent(const sf::Event& Event)
 {
     if (Event.mouseButton.button == sf::Mouse::Right)
         IsDragging = false;
 }
 
-inline void Universe::HandleWindowResizedEvent(const sf::Event& Event)
+void Universe::HandleWindowResizedEvent(const sf::Event& Event)
 {
     auto resolution = sf::Vector2i(Event.size.width, Event.size.height);
     auto center = _Window->mapPixelToCoords(resolution / 2);
@@ -96,15 +101,33 @@ inline void Universe::HandleWindowResizedEvent(const sf::Event& Event)
     _Window->setView(view);
 }
 
-inline void Universe::MoveCamera()
+void Universe::HandleMouseWheelMovedEvent(const sf::Event& Event)
+{
+    auto delta = Event.mouseWheel.delta;
+    auto factor = std::abs(delta) * 0.05f;
+    Zoom(delta < 0 ? 1.f + factor : 1.f - factor);
+}
+
+void Universe::Zoom(float Factor)
 {
     sf::View view = _Window->getView();
-    auto mousePosition = sf::Mouse::getPosition(*_Window);
+    auto center = view.getCenter();
+    auto mouseWorldPosition = _Window->mapPixelToCoords(sf::Mouse::getPosition(*_Window));
+    auto newCenter = center - (center - mouseWorldPosition) / 10.f;
+    view.setCenter(newCenter);
+    view.zoom(Factor);
+    _Window->setView(view);
+}
+
+void Universe::MoveCamera()
+{
+    sf::View view = _Window->getView();
+    auto mouseWorldPosition = _Window->mapPixelToCoords(sf::Mouse::getPosition(*_Window));
+    auto lastMouseWorldPosition = _Window->mapPixelToCoords(LastMousePosition);
     // Вычисляем насколько сместился курсор и задаем нвоый центр
-    sf::Vector2f center = view.getCenter() + sf::Vector2f(LastMousePosition - mousePosition);
+    auto center = view.getCenter() + lastMouseWorldPosition - mouseWorldPosition;
     view.setCenter(center);
     _Window->setView(view);
-    
 }
 
 void Universe::DrawUniverse()

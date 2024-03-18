@@ -23,13 +23,15 @@ private:
 	void CalculatePhysics();
 	void DrawUniverse();
 	void AddCelestialObject(const sf::Vector2i CursorCoords, CelestialObject::Type Type);
-	inline void HandleWindowCloseEvent(const sf::Event& Event);
-	inline void HandleMouseButtonPressedEvent(const sf::Event& Event);
-	inline void HandleMouseButtonReleasedEvent(const sf::Event& Event);
-	inline void HandleWindowResizedEvent(const sf::Event& Event);
-	inline void HandleKeyPressedEvent(const sf::Event& Event);
-	inline void MoveCamera();
+	void HandleWindowCloseEvent(const sf::Event& Event);
+	void HandleMouseButtonPressedEvent(const sf::Event& Event);
+	void HandleMouseButtonReleasedEvent(const sf::Event& Event);
+	void HandleWindowResizedEvent(const sf::Event& Event);
+	void HandleKeyPressedEvent(const sf::Event& Event);
+	void HandleMouseWheelMovedEvent(const sf::Event& Event);
+	void MoveCamera();
 	void ProcessCameraAndMouse();
+	void Zoom(float Factor);
 
 	std::map<sf::Event::EventType, std::function<void(const sf::Event&)>> EventHandlers;
 	PhysicEngine _Engine;
