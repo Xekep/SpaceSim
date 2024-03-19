@@ -1,26 +1,21 @@
 #include "Universe.h"
+using namespace std::placeholders;
+
 Universe::Universe(unsigned int X, unsigned int Y, std::string Title)
-    : _Window(std::make_unique<sf::RenderWindow>(sf::VideoMode(X, Y), Title))
-{
-    _Window->setFramerateLimit(60);
-    InitializeEventHandlers();
-}
-
-void Universe::InitializeEventHandlers()
-{
-    using namespace std::placeholders;
-
-    EventHandlers.insert({
+    : _Window(std::make_unique<sf::RenderWindow>(sf::VideoMode(X, Y), Title)),
+    EventHandlers({
         { sf::Event::Closed, std::bind(&Universe::HandleWindowCloseEvent, this, _1) },
         { sf::Event::MouseButtonPressed, std::bind(&Universe::HandleMouseButtonPressedEvent, this, _1) },
         { sf::Event::MouseButtonReleased, std::bind(&Universe::HandleMouseButtonReleasedEvent, this, _1) },
         { sf::Event::Resized, std::bind(&Universe::HandleWindowResizedEvent, this, _1) },
         { sf::Event::KeyPressed, std::bind(&Universe::HandleKeyPressedEvent, this, _1) },
         { sf::Event::MouseWheelMoved, std::bind(&Universe::HandleMouseWheelMovedEvent, this, _1)}
-    });
+        })
+{
+    _Window->setFramerateLimit(60);
 }
 
-void Universe::Run()
+int Universe::Run()
 {
     while (_Window->isOpen())
     {
@@ -29,6 +24,7 @@ void Universe::Run()
         CalculatePhysics();
         DrawUniverse();
     }
+    return 0;
 }
 
 void Universe::CalculatePhysics()
@@ -47,12 +43,17 @@ void Universe::HandleEvents()
     }
 }
 
+inline sf::Vector2f Universe::GetMousePosition()
+{
+    return _Window->mapPixelToCoords(sf::Mouse::getPosition(*_Window));
+}
+
 void Universe::ProcessCameraAndMouse()
 {
     if (IsDragging)
         MoveCamera();
 
-    LastMousePosition = sf::Mouse::getPosition(*_Window);
+    PrevMousePosition = GetMousePosition();
 }
 
 void Universe::HandleWindowCloseEvent(const sf::Event& Event)
@@ -62,11 +63,10 @@ void Universe::HandleWindowCloseEvent(const sf::Event& Event)
 
 void Universe::HandleMouseButtonPressedEvent(const sf::Event& Event)
 {
-    auto mousePosition = sf::Mouse::getPosition(*_Window);
     if (Event.mouseButton.button == sf::Mouse::Left)
     {
         auto type = _rnd.Generate<int>(0, 99) <= 90 ? CelestialObject::Type::Planet : CelestialObject::Type::Star;
-        AddCelestialObject(mousePosition, type);
+        AddCelestialObject(GetMousePosition(), type);
     }
     else if (Event.mouseButton.button == sf::Mouse::Right)
     {
@@ -74,9 +74,8 @@ void Universe::HandleMouseButtonPressedEvent(const sf::Event& Event)
     }
     else if (Event.mouseButton.button == sf::Mouse::Middle)
     {
-
+        FollowingObjectId = FindCelestialObject(GetMousePosition());
     }
-
 }
 
 void Universe::HandleKeyPressedEvent(const sf::Event& Event)
@@ -88,7 +87,9 @@ void Universe::HandleKeyPressedEvent(const sf::Event& Event)
 void Universe::HandleMouseButtonReleasedEvent(const sf::Event& Event)
 {
     if (Event.mouseButton.button == sf::Mouse::Right)
+    {
         IsDragging = false;
+    }
 }
 
 void Universe::HandleWindowResizedEvent(const sf::Event& Event)
@@ -104,28 +105,41 @@ void Universe::HandleWindowResizedEvent(const sf::Event& Event)
 void Universe::HandleMouseWheelMovedEvent(const sf::Event& Event)
 {
     auto delta = Event.mouseWheel.delta;
-    auto factor = std::abs(delta) * 0.05f;
-    Zoom(delta < 0 ? 1.f + factor : 1.f - factor);
+    Zoom(delta < 0 ? 1.f + ZOOM_FACTOR : 1.f - ZOOM_FACTOR);
 }
 
 void Universe::Zoom(float Factor)
 {
     sf::View view = _Window->getView();
-    auto center = view.getCenter();
+    auto& center = view.getCenter();
     auto mouseWorldPosition = _Window->mapPixelToCoords(sf::Mouse::getPosition(*_Window));
-    auto newCenter = center - (center - mouseWorldPosition) / 10.f;
+    auto newCenter = center;
+    if(Factor > 1.f)
+        newCenter += (center - mouseWorldPosition) / 20.f;
+    else
+        newCenter -= (center - mouseWorldPosition) / 20.f;
     view.setCenter(newCenter);
     view.zoom(Factor);
     _Window->setView(view);
 }
 
+int Universe::FindCelestialObject(const sf::Vector2f& Coords)
+{
+    for (auto& object : _Objects)
+    {
+        auto delta = object->GetPosition() - Coords;
+        float distance = std::hypot(delta.x, delta.y);
+        if (distance <= object->GetRadius())
+            return object->GetId();
+    }
+    return 0;
+}
+
 void Universe::MoveCamera()
 {
     sf::View view = _Window->getView();
-    auto mouseWorldPosition = _Window->mapPixelToCoords(sf::Mouse::getPosition(*_Window));
-    auto lastMouseWorldPosition = _Window->mapPixelToCoords(LastMousePosition);
     // Вычисляем насколько сместился курсор и задаем нвоый центр
-    auto center = view.getCenter() + lastMouseWorldPosition - mouseWorldPosition;
+    auto center = view.getCenter() + PrevMousePosition - GetMousePosition();
     view.setCenter(center);
     _Window->setView(view);
 }
@@ -138,11 +152,18 @@ void Universe::DrawUniverse()
     _Window->display();
 }
 
-void Universe::AddCelestialObject(const sf::Vector2i CursorCoords, CelestialObject::Type Type)
+void Universe::AddCelestialObject(const sf::Vector2f ObjCoords, CelestialObject::Type Type)
 {
-    auto objCoords = _Window->mapPixelToCoords(CursorCoords);
-    if (Type == CelestialObject::Type::Planet)
-        _Objects.push_back(std::make_unique<Planet>(objCoords));
-    else
-        _Objects.push_back(std::make_unique<Star>(objCoords));
+    auto object = CelestialObjectFactory::CreateObject(Type, ObjCoords);
+    object->AddObserver(this);
+    _Objects.push_back(std::move(object));
+}
+
+void Universe::HandleEvent(Observable* observable)
+{
+    if (typeid(observable) != typeid(CelestialObject))
+        return;
+    CelestialObject* object = dynamic_cast<CelestialObject*>(observable);
+    //if(object->GetId() == FollowingObjectId)
+        //
 }

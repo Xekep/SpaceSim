@@ -5,11 +5,13 @@ class Star :
     public CelestialObject
 {
 public:
-    Star(const sf::Vector2f& Coords);
+    Star(const sf::Vector2f& Coords, float Density, float Mass);
     sf::Color GetColor() const override;
     CelestialObject::Type GetType() const override;
 
 private:
+    sf::Shader shader;
+
     const float CLASS_O = 10.0f;
     const float CLASS_B = 8.0f;
     const float CLASS_A = 2.0f;

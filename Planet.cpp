@@ -1,9 +1,7 @@
 #include "Planet.h"
-Planet::Planet(const sf::Vector2f& Coords)
-	: CelestialObject(Coords)
+Planet::Planet(const sf::Vector2f& Coords, float Density, float Mass)
+	: CelestialObject(Coords, Density, Mass)
 {
-	_SolarMass = _rnd.Generate<float>(0.000003f, 0.0013f);
-	_Density = _rnd.Generate<float>(1330, 5520);
 	RecalculateRadius();
 	_Shape.setFillColor(GetColor());
 	SetRandomName();
@@ -18,13 +16,14 @@ CelestialObject::Type Planet::GetType() const
 }
 void Planet::SetRandomName() {
 
-	const std::array<std::string, 10> prefixes = { "Ast", "Cos", "Gal", "Hel", "Nep", "Ori", "Per", "Tau", "Ura", "Zet" };
-	const std::array<std::string, 10> suffixes = { "on", "os", "er", "onos", "astron", "ite", "onium", "ium", "osm", "on" };
-	const std::array<std::string, 7> minorSuffixes = { "ula", "ulae", "ulus", "ule", "ulo", "ulum", "uloa" };
+	const std::vector<std::string> prefixes = { "Ast", "Cos", "Gal", "Hel", "Nep", "Ori", "Per", "Tau", "Ura", "Zet" };
+	const std::vector<std::string> suffixes = { "on", "os", "er", "onos", "astron", "ite", "onium", "ium", "osm", "on" };
+	const std::vector<std::string> minorSuffixes = { "ula", "ulae", "ulus", "ule", "ulo", "ulum", "uloa" };
 
-	int prefixIndex = _rnd.Generate() % prefixes.size();
-	int suffixIndex = _rnd.Generate() % suffixes.size();
-	int minorSuffixIndex = _rnd.Generate() % minorSuffixes.size();
+	auto rand = [=](const auto& array) {
+		int index = _Rnd.Generate(static_cast<int>(array.size()) - 1);
+		return array[index];
+	};
 
-	_Name = prefixes[prefixIndex] + suffixes[suffixIndex] + minorSuffixes[minorSuffixIndex];
+	_Name = rand(prefixes) + rand(suffixes) + rand(minorSuffixes);
 }

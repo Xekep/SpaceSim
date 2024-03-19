@@ -1,9 +1,7 @@
 ﻿#include "Star.h"
-Star::Star(const sf::Vector2f& Coords)
-	: CelestialObject(Coords)
+Star::Star(const sf::Vector2f& Coords, float Density, float Mass)
+	: CelestialObject(Coords, Density, Mass)
 {
-	_SolarMass = 0.09f;
-	_Density = SOLAR_DENSITY * 50;
 	RecalculateRadius();
 	_Shape.setFillColor(GetColor());
 	SetName("Red dwarf");

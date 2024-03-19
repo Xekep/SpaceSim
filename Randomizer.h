@@ -24,6 +24,11 @@ public:
             return distribution(_Generator);
         }
     }
+    template<typename T>
+    T Generate(T max)
+    {
+        return Generate(static_cast<T>(0), max);
+    }
     int Generate()
     {
         RandSeed();
