@@ -3,6 +3,7 @@ using namespace std::placeholders;
 
 Universe::Universe(unsigned int X, unsigned int Y, std::string Title)
     : _Window(std::make_unique<sf::RenderWindow>(sf::VideoMode(X, Y), Title)),
+    _Camera(std::make_unique<Camera>(sf::Vector2f( static_cast<float>(X), static_cast<float>(Y)))),
     EventHandlers({
         { sf::Event::Closed, std::bind(&Universe::HandleWindowCloseEvent, this, _1) },
         { sf::Event::MouseButtonPressed, std::bind(&Universe::HandleMouseButtonPressedEvent, this, _1) },
@@ -50,10 +51,10 @@ inline sf::Vector2f Universe::GetMousePosition()
 
 void Universe::ProcessCameraAndMouse()
 {
-    if (IsDragging)
-        MoveCamera();
+    if(IsDragging && !FollowingObjectId)
+        CameraFollowMouse();
 
-    PrevMousePosition = GetMousePosition();
+    _PrevMousePosition = GetMousePosition();
 }
 
 void Universe::HandleWindowCloseEvent(const sf::Event& Event)
@@ -87,19 +88,15 @@ void Universe::HandleKeyPressedEvent(const sf::Event& Event)
 void Universe::HandleMouseButtonReleasedEvent(const sf::Event& Event)
 {
     if (Event.mouseButton.button == sf::Mouse::Right)
-    {
         IsDragging = false;
-    }
 }
 
 void Universe::HandleWindowResizedEvent(const sf::Event& Event)
 {
-    auto resolution = sf::Vector2i(Event.size.width, Event.size.height);
-    auto center = _Window->mapPixelToCoords(resolution / 2);
-    sf::FloatRect visibleArea(sf::Vector2f(0.f, 0.f), sf::Vector2f(resolution));
-    sf::View view(visibleArea);
-    view.setCenter(center);
-    _Window->setView(view);
+    int x = Event.size.width, y = Event.size.height;
+    _Camera->reset(sf::FloatRect({ 0.f, 0.f }, { static_cast<float>(x), static_cast<float>(y) }));
+    _Camera->setCenter(_Window->mapPixelToCoords(sf::Vector2i(x, y) / 2));
+    _Window->setView(*_Camera);
 }
 
 void Universe::HandleMouseWheelMovedEvent(const sf::Event& Event)
@@ -110,17 +107,8 @@ void Universe::HandleMouseWheelMovedEvent(const sf::Event& Event)
 
 void Universe::Zoom(float Factor)
 {
-    sf::View view = _Window->getView();
-    auto& center = view.getCenter();
-    auto mouseWorldPosition = _Window->mapPixelToCoords(sf::Mouse::getPosition(*_Window));
-    auto newCenter = center;
-    if(Factor > 1.f)
-        newCenter += (center - mouseWorldPosition) / 20.f;
-    else
-        newCenter -= (center - mouseWorldPosition) / 20.f;
-    view.setCenter(newCenter);
-    view.zoom(Factor);
-    _Window->setView(view);
+    _Camera->modifyZoom(Factor, _Window->mapPixelToCoords(sf::Mouse::getPosition(*_Window)));
+    _Window->setView(*_Camera);
 }
 
 int Universe::FindCelestialObject(const sf::Vector2f& Coords)
@@ -135,13 +123,18 @@ int Universe::FindCelestialObject(const sf::Vector2f& Coords)
     return 0;
 }
 
-void Universe::MoveCamera()
+void Universe::CameraFollowMouse()
 {
-    sf::View view = _Window->getView();
     // Вычисляем насколько сместился курсор и задаем нвоый центр
-    auto center = view.getCenter() + PrevMousePosition - GetMousePosition();
-    view.setCenter(center);
-    _Window->setView(view);
+    auto center = _Camera->getCenter() + _PrevMousePosition - GetMousePosition();
+    MoveCamera(center);
+}
+
+
+void Universe::MoveCamera(const sf::Vector2f Coords)
+{
+    _Camera->setCenter(Coords);
+    _Window->setView(*_Camera);
 }
 
 void Universe::DrawUniverse()
@@ -155,15 +148,17 @@ void Universe::DrawUniverse()
 void Universe::AddCelestialObject(const sf::Vector2f ObjCoords, CelestialObject::Type Type)
 {
     auto object = CelestialObjectFactory::CreateObject(Type, ObjCoords);
-    object->AddObserver(this);
+    object->AddObserver(*this);
     _Objects.push_back(std::move(object));
 }
 
-void Universe::HandleEvent(Observable* observable)
+void Universe::HandleEvent(const Observable& Observable)
 {
-    if (typeid(observable) != typeid(CelestialObject))
+    if (typeid(Observable) != typeid(CelestialObject))
         return;
-    CelestialObject* object = dynamic_cast<CelestialObject*>(observable);
-    //if(object->GetId() == FollowingObjectId)
-        //
+    auto& object = dynamic_cast<const CelestialObject&>(Observable);
+    if (object.GetId() == FollowingObjectId)
+    {
+        MoveCamera(object.GetPosition());
+    }
 }

@@ -7,18 +7,18 @@ class Observable
 {
 public:
 	virtual ~Observable() {}
-	void AddObserver(Observer* Observer)
+	void AddObserver(Observer& Observer)
 	{
-		_Observers.push_back(Observer);
+		_Observers.push_back(&Observer);
 	}
-	void RemoveObserver(Observer* Observer)
+	void RemoveObserver(Observer& Observer)
 	{
-		std::erase(_Observers, Observer);
+		std::erase(_Observers, &Observer);
 	}
 	void NotifyObservers()
 	{
 		for (auto& observer : _Observers)
-			observer->HandleEvent(this);
+			observer->HandleEvent(*this);
 	}
 
 private:

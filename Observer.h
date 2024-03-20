@@ -3,5 +3,5 @@ class Observable;
 
 class Observer {
 public:
-    virtual void HandleEvent(Observable* observable) = 0;
+    virtual void HandleEvent(const Observable& observable) = 0;
 };
